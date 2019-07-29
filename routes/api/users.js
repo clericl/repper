@@ -5,14 +5,21 @@ const jwt = require("jsonwebtoken");
 const passport = require("passport");
 const keys = require("../../config/keys");
 const User = require("../../models/User");
+const validateRegisterInput = require("../../validation/register");
+const validateLoginInput = require("../../validation/login");
 
 router.post("/register", (req, res) => {
+    const { errors, invalid } = validateRegisterInput(req.body);
+    
+    if (!isValid) {
+        return res.status(400).json(errors);
+    }
+
     User.findOne({ email: req.body.email })
         .then(user => {
             if (user) {
-                return res.status(400).json({
-                    email: "Email address already associated with an account!"
-                });
+                errors.email = "Email address already in use."
+                return res.status(400).json(errors);
             }
 
             const newUser = new User({
@@ -39,7 +46,7 @@ router.post("/register", (req, res) => {
                                             token: "Bearer " + token
                                         });
                                     })
-                                .catch(err => console.log(err));
+                                    .catch(err => console.log(err));
                             }
                         );
                 });
@@ -80,4 +87,11 @@ router.post("/login", (req, res) => {
                 })
                 .catch(err => console.log(err));
         });
+});
+
+router.get("/current", passport.authenticate("jwt", { session: false }), (req, res) => {
+    res.json({
+        id: req.user.id,
+        email: req.user.email,
+    });
 });
